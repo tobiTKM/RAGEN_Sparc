@@ -212,9 +212,100 @@ custom_envs:
 
   Lean:
     env_type: lean
-    max_actions_per_traj: 30
+    max_actions_per_traj: 50
     env_instruction: "You are a Lean theorem prover. Given a Lean theorem statement, propose a sequence of tactics that completes the proof. Think step by step about which tactics to apply next. Provide tactics separated by '||', for example <answer>intro || simp || rfl</answer>."
     max_tokens: 512
     parallel_friendly: true
     max_workers: 32
     env_config: null # Please refer to ragen/env/lean/config.py for a full list of parameters.
+
+  SPaRC:
+    env_type: sparc
+    max_actions_per_traj: 31
+    env_instruction: |
+      You are an autonomous agent controlling a path‐finding puzzle solver.
+      Your goal is to find a valid path (a continuous line) from the specified Start Node to the End Node on the provided grid, adhering to all puzzle rules.
+
+      Core Concepts & Grid Basics:
+      Grid Dimensions: You can find the puzzle grid size in the info 
+      Path: The solution is a single, continuous line connecting adjacent nodes either horizontally or vertically.
+      Revisiting: You can not traceback your path. you can not visit a cell twice.
+      Rule Cells: Cells containing rule symbols (squares, stars, etc.) have coordinates where both x and y are odd. 
+      The path goes around these rule cells, never on them. They are also marked as gaps.
+      Regions: The drawn path divides the grid cells into one or more distinct enclosed areas (regions). Many rules apply based on the contents of these regions.
+      Valid Path Cells: The path travels along the grid lines (edges between nodes). It can only occupy positions marked `+` or `.` in the grid layout (these correspond to positions with at least one even coordinate).
+      Rule Cells: Cells containing rule symbols (squares, stars, etc.) have coordinates where both `x` and `y` are odd. The path goes *around* these rule cells, never *on* them.
+      Regions: The drawn path divides the grid cells into one or more distinct enclosed areas (regions). Many rules apply based on the contents of these regions.
+
+
+      Symbol Legend (Grid Notation)
+      *   `S`: **Start Node** (Path begins here)
+      *   `E`: **End Node** (Path ends here)
+      *   `V`: **Visited Node** (Path has passed through this cell)
+      *   `L`: **Current Node** (Path is currently on this cell)
+      *   `+`: Valid cell for the path to occupy
+      *   `N`: Empty rule cell (no rule)
+      *   `G`: **Gap** (Path **CANNOT** cross this cell)
+      *   `.`: **Dot** (Path **MUST** pass through this cell)
+      *   `o-X`: **Square** of color X
+      *   `*-X`: **Star** of color X
+      *   `A-X`: **Triangle** (touch 1 edge)
+      *   `B-X`: **Triangle** (touch 2 edges)
+      *   `C-X`: **Triangle** (touch 3 edges)
+      *   `D-X`: **Triangle** (touch 4 edges)
+      *   `P-X-Y`: **Polyshape** (positive) of color X and shape ID Y
+      *   `Y-X-Y`: **Negative Polyshape** (ylop) of color X and shape ID Y
+          
+      **Color Codes:** R=Red, B=Blue, G=Green, Y=Yellow, W=White, O=Orange, P=Purple, K=Black
+      
+          
+      Detailed Solving Rules:
+      The drawn path must satisfy ALL applicable constraints:
+
+      1.  Path Constraints:
+          Path connects adjacent nodes (horizontal/vertical moves only).
+          Nodes CAN NOT be revisited. You cannot visit a cell twice.
+          Path MUST pass through all Dot cells.
+          Path CANNOT pass through any Gap cells.
+
+      2.  Region-Based Rules (Apply to areas enclosed by the path):
+          Squares: All squares within a single region MUST be the same color. Squares of different colors MUST be separated into different regions by the path.
+          Stars: Within a single region, each star symbol MUST be paired with exactly ONE other element of the same color. Other colors within the region are irrelevant to this specific star's rule.
+          
+          Polyshapes(poly): The region containing this symbol MUST be able to contain the specified shape (defined in Polyshape Definitions). The shape must fit entirely within the region's boundaries.
+          If multiple positive polyshapes are in one region, the region must accommodate their combined, non-overlapping forms. Rotation of polyshapes is generally allowed unless context implies otherwise.
+          
+          Negative Polyshapes(ylop): These subtract shape requirements, typically within the same region as corresponding positive polyshapes.
+          A negative polyshape cancels out a positive polyshape of the exact same shape and color within that region.
+          If all positive shapes are canceled, the region has no shape constraint. A negative shape is only considered 'used' if it cancels a positive one.
+          Negative shapes can sometimes rationalize apparent overlaps or boundary violations of positive shapes if interpreted as cancellations.
+
+      3.  Path-Based Rules (Edge Touching):
+          Triangles: The path MUST touch a specific number of edges of the cell containing the triangle symbol.
+              (1): Path touches EXACTLY 1 edge of the triangle's cell.
+              (2): Path touches EXACTLY 2 edges of the triangle's cell.
+              (3): Path touches EXACTLY 3 edges of the triangle's cell.
+              (4): Path touches EXACTLY 4 edges (fully surrounds) the triangle's cell.
+
+      Polyshape Definitions: Shapes are defined by 2D arrays where 1 indicates an occupied cell and 0 indicates an empty cell. {polyshapes}
+
+      At each turn you'll receive current Information.
+      Observation: The current state of the grid, including the path and any rule cells.
+      The Observation is a json string representation:
+      Example observation: [["+","+","+","+","+","G","V"],["+","N",".","*-K","+","N","V"],["V","V","V","V","V","V","V"],["L","N","+","*-K","+","N","+"],["+",".","+","+","+","+","+"]]
+
+      Also in the Observation you'll get:
+      The current grid size, the current location, the current legal actions, the current step, 
+      the solution count for the puzzle(how many solutions there are for the puzzle at the start), 
+      the difficulty of this puzzle (scaled 1-5) and also the current rule status (which rules have been satisfied so far and which have not).
+
+      Actions: Right, Up, Left, Down
+      Reply: <answer>Action</answer>
+    max_tokens: 300
+    parallel_friendly: false
+    max_workers: 32
+    env_config:
+      max_steps: 31
+      traceback: false
+      observation_format: "SPaRC"
+      render_mode: null

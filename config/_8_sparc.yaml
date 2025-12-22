@@ -1,0 +1,13 @@
+defaults:
+  - base
+
+trainer:
+  experiment_name: sparc-Qwen4B-1
+
+es_manager:
+  train:
+    env_configs:
+      tags: ["SPaRC"]
+  val:
+    env_configs:
+      tags: ["SPaRC"]
