@@ -12,6 +12,8 @@ from .metamathqa.env import MetaMathQAEnv
 from .metamathqa.config import MetaMathQAEnvConfig
 from .lean.config import LeanEnvConfig
 from .lean.env import LeanEnv
+from .sudoku.config import SudokuEnvConfig
+from .sudoku.env import SudokuEnv
 from .sparc.env import SPaRCEnv
 from .sparc.config import SPaRCEnvConfig
 
@@ -24,6 +26,7 @@ REGISTERED_ENVS = {
     # 'alfworld': AlfredTXTEnv,
     'metamathqa': MetaMathQAEnv,
     'lean': LeanEnv,
+    'sudoku': SudokuEnv,
     'sparc': SPaRCEnv,
 }
 
@@ -35,6 +38,7 @@ REGISTERED_ENV_CONFIGS = {
     # 'alfworld': AlfredEnvConfig,
     'metamathqa': MetaMathQAEnvConfig,
     'lean': LeanEnvConfig,
+    'sudoku': SudokuEnvConfig,
     'sparc': SPaRCEnvConfig,
 }
 
