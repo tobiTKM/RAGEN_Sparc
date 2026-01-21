@@ -451,6 +451,7 @@ class ContextManager:
                 env_output['history'] = env_output['history'][-max_k:]
             
             max_model_len = getattr(self.config.actor_rollout_ref.rollout, "max_model_len", None)
+            effective_max_model_len = max_model_len - 16
             history = env_output['history']
             truncated = False
 
@@ -500,15 +501,15 @@ class ContextManager:
                 else:
                     text_with_prompt = text
 
-                if max_model_len is None:
+                if effective_max_model_len is None:
                     break
                 token_len = len(self.tokenizer(text_with_prompt, add_special_tokens=False)["input_ids"])
-                if token_len <= max_model_len:
+                if token_len <= effective_max_model_len:
                     break
                 if len(history) <= 1:
                     logging.error(
                         "The model in env %s has exceeded max_model_len %d in one turn (%d tokens). Please try to increase max_model_len.",
-                        env_output["env_id"], max_model_len, token_len,
+                        env_output["env_id"], effective_max_model_len, token_len,
                     )
                     break
                 history = history[1:]
@@ -518,7 +519,7 @@ class ContextManager:
                 env_output['history'] = history
                 logging.warning(
                     "Truncated history for env %s to keep prompt within %d tokens (current %d).",
-                    env_output["env_id"], max_model_len, token_len,
+                    env_output["env_id"], effective_max_model_len, token_len,
                 )
 
             llm_input_texts.append(text_with_prompt)

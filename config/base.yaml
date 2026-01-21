@@ -9,7 +9,7 @@ seed:
   val: 123
 
 micro_batch_size_per_gpu: 1
-ppo_mini_batch_size: 8
+ppo_mini_batch_size: 4
 model_path: Qwen/Qwen3-4B
 enable_response_mask: True # Enabling response mask could improve stability of rollout/old_log_prob, as P(st|history) are no longer calculated in loss here. See https://docs.google.com/document/d/1bg7obeiKTExuHHBl5uOiSpec5uLDZ2Tgvxy6li5pHX4/edit?usp=sharing for more details.
 grpo_advantage_length_weight: True # if you do not enable this and critic/advantage_estimator is GRPO, and the critic/advantages/mean is too low, then you can try enabling this to encourage reasoning and forbid collapse
@@ -47,7 +47,7 @@ actor_rollout_ref:
     tensor_model_parallel_size: 1
     max_model_len: 8192
     prompt_length: 1 # useless. Just put it here
-    response_length: 5000 # single-turn response length
+    response_length: 4000 # single-turn response length
     gpu_memory_utilization: 0.6
     max_num_batched_tokens: 8192 # set only when enable_chunked_prefill is true
     temperature: 1
@@ -91,14 +91,13 @@ algorithm:
 trainer:
   project_name: sparc-training
   experiment_name: test_sparc
-  default_local_dir: /scratch/users/u21167/ragen_sparc/checkpoints/${trainer.project_name}/${trainer.experiment_name}  
   local_log_dir: "results/"
   save_freq: 100
   total_training_steps: 100
   validation_steps: 1 # validation instances = validation_steps * val_env_groups * group_size
-  val_before_train: True
+  val_before_train: False
   n_gpus_per_node: 4
-  test_freq: 10
+  test_freq: 25
   generations_to_log_to_wandb: 
     val: 20
   logger: [ 'console', 'wandb' ]
@@ -108,7 +107,7 @@ trainer:
 agent_proxy:
   without_history: False # if True, each turn is treated as independent sample without history
   batch_adjust_mode: copy # "copy" to duplicate samples, "delete" to remove samples when batch size is not divisible
-  max_context_window: 5 # set a value > 0 to enable context window for long trajectory
+  max_context_window: 1 # set a value > 0 to enable context window for long trajectory
   max_turn: 31
   action_sep: "||"
   max_actions_per_turn: 1 # how many actions can be output at most in a single turn
@@ -121,18 +120,18 @@ agent_proxy:
 es_manager:
   format_penalty: -0.01
   train:
-    env_groups: 8
+    env_groups: 4
     # under the same group, the env config and env seed are ensured to be equal
-    group_size: 8
+    group_size: 4
     env_configs:
       tags: ["SPaRC"]
-      n_groups: [8] # If not set, all env names divide nums equally. Under the same group, the env config and env seed (prompt) are equal in each generation
+      n_groups: [4] # If not set, all env names divide nums equally. Under the same group, the env config and env seed (prompt) are equal in each generation
   val:
-    env_groups: 64
+    env_groups: 8
     group_size: 1 # should be set to 1 because when val temperature is set to 0 and group size > 1, there will be repetitive prompts which leads to same trajectory.
     env_configs:
       tags: ["SPaRC"]
-      n_groups: [64] # TODO: If not set, all env names divide nums equally. Under the same group, the env config and env seed (prompt) are equal in each generation
+      n_groups: [8] # TODO: If not set, all env names divide nums equally. Under the same group, the env config and env seed (prompt) are equal in each generation
 ctx_manager:
   generation: # go to vllm
     gen_config:

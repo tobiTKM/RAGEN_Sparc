@@ -339,8 +339,10 @@ custom_envs:
       the difficulty of this puzzle (scaled 1-5) and also the current rule status (which rules have been satisfied so far and which have not).
 
       Actions: Right, Up, Left, Down
+      Keep your thinking under 500 Tokens to leave enough space for the final answer.
+      You are not allowed to think for more than 500 tokens.
       Reply: <answer>Action</answer>
-    max_tokens: 300
+    max_tokens: 500
     parallel_friendly: false
     max_workers: 32
     env_config:
